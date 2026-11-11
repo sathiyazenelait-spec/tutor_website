@@ -152,3 +152,4 @@ export function DigitalIdCardModal({ profile, open, onOpenChange }: DigitalIdCar
     </Dialog>
   );
 }
+

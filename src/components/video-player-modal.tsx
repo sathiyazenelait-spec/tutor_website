@@ -99,9 +99,11 @@ export function VideoPlayerModal({ video, open, onOpenChange, onVideoUpdated }: 
     const parts = timestampStr.split(":").map(Number);
     let seconds = 0;
     if (parts.length === 2) {
-      seconds = parts[0] * 60 + parts[1];
+      const [m = 0, s = 0] = parts;
+      seconds = m * 60 + s;
     } else if (parts.length === 3) {
-      seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      const [h = 0, m = 0, s = 0] = parts;
+      seconds = h * 3600 + m * 60 + s;
     }
     mainVideoRef.current.currentTime = seconds;
     mainVideoRef.current.play().catch(() => {});

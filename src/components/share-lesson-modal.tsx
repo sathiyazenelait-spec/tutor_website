@@ -295,3 +295,4 @@ export function ShareLessonModal({ videoId, videoTitle, open, onOpenChange }: Sh
     </Dialog>
   );
 }
+

@@ -68,11 +68,9 @@ export function TutorNoteModal({ open, onOpenChange, onSuccess }: TutorNoteModal
   };
 
   const updateSub = (index: number, field: keyof SubExplanationDraft, val: string) => {
-    setSubExplanations((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: val };
-      return copy;
-    });
+    setSubExplanations((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: val } : item))
+    );
   };
 
   const quickFillSample = () => {

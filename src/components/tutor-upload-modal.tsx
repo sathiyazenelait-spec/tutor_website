@@ -102,11 +102,9 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
   };
 
   const updateSubRef = (index: number, field: keyof SubRefDraft, val: string) => {
-    setSubRefs((prev) => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], [field]: val };
-      return copy;
-    });
+    setSubRefs((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: val } : item))
+    );
   };
 
   const quickFillSample = () => {

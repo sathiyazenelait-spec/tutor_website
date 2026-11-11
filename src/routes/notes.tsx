@@ -67,7 +67,8 @@ function NotesPage() {
       const data: SmartNoteData[] = await res.json();
       setNotes(data);
       if (data.length > 0) {
-        setSelectedNote((prev) => (prev ? data.find((n) => n.id === prev.id) || data[0] : data[0]));
+        const first = data[0] ?? null;
+        setSelectedNote((prev) => (prev ? (data.find((n) => n.id === prev.id) ?? first) : first));
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to load notes");
@@ -82,8 +83,9 @@ function NotesPage() {
 
   // When note changes, select the first sub-explanation term by default
   useEffect(() => {
-    if (selectedNote && selectedNote.subExplanations?.length > 0) {
-      setActiveTermKey(selectedNote.subExplanations[0].termKey);
+    if (selectedNote && selectedNote.subExplanations && selectedNote.subExplanations.length > 0) {
+      const firstSub = selectedNote.subExplanations[0];
+      setActiveTermKey(firstSub?.termKey ?? null);
     } else {
       setActiveTermKey(null);
     }
