@@ -42,3 +42,4 @@ public class SubExplanationRequest {
     public String getClipUrl() { return clipUrl; }
     public void setClipUrl(String clipUrl) { this.clipUrl = clipUrl; }
 }
+

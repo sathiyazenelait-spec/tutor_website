@@ -60,3 +60,4 @@ public class NoteSubExplanation {
     public SmartNote getSmartNote() { return smartNote; }
     public void setSmartNote(SmartNote smartNote) { this.smartNote = smartNote; }
 }
+

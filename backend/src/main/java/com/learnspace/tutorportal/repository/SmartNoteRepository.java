@@ -12,3 +12,4 @@ public interface SmartNoteRepository extends JpaRepository<SmartNote, Long> {
     List<SmartNote> findBySubjectIgnoreCaseOrderByCreatedAtDesc(String subject);
     List<SmartNote> findByTutorIdOrderByCreatedAtDesc(Long tutorId);
 }
+

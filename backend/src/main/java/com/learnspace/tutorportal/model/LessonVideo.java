@@ -30,6 +30,10 @@ public class LessonVideo {
     private Long tutorId;
     private String tutorName;
 
+    private int likes = 0;
+    private double rating = 5.0;
+    private int ratingCount = 1;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "lessonVideo", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
@@ -46,6 +50,9 @@ public class LessonVideo {
         this.duration = duration;
         this.tutorId = tutorId;
         this.tutorName = tutorName;
+        this.likes = 0;
+        this.rating = 5.0;
+        this.ratingCount = 1;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -83,10 +90,18 @@ public class LessonVideo {
     public String getTutorName() { return tutorName; }
     public void setTutorName(String tutorName) { this.tutorName = tutorName; }
 
+    public int getLikes() { return likes; }
+    public void setLikes(int likes) { this.likes = likes; }
+
+    public double getRating() { return rating; }
+    public void setRating(double rating) { this.rating = rating; }
+
+    public int getRatingCount() { return ratingCount; }
+    public void setRatingCount(int ratingCount) { this.ratingCount = ratingCount; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     public List<SubReferenceClip> getSubReferences() { return subReferences; }
     public void setSubReferences(List<SubReferenceClip> subReferences) { this.subReferences = subReferences; }
 }
-

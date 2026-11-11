@@ -83,6 +83,8 @@ public class WebSecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/videos/**").permitAll()
                 .requestMatchers("/api/notes/**").permitAll()
+                .requestMatchers("/api/subjects/**").permitAll()
+                .requestMatchers("/api/profile/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/error").permitAll()

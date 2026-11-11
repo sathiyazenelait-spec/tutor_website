@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,9 +32,25 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
 
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("Mathematics");
+  const [availableSubjects, setAvailableSubjects] = useState<string[]>(["Mathematics", "Physics", "Chemistry", "Biology"]);
   const [description, setDescription] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [duration, setDuration] = useState("14:30");
+
+  useEffect(() => {
+    fetch("http://localhost:8081/api/subjects")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const names = data.map((d: any) => d.name);
+          setAvailableSubjects(names);
+          if (!names.includes(subject)) {
+            setSubject(names[0]);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [open]);
 
   const [subRefs, setSubRefs] = useState<SubRefDraft[]>([
     {
@@ -218,10 +234,11 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
                 onChange={(e) => setSubject(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="Mathematics">Mathematics</option>
-                <option value="Physics">Physics</option>
-                <option value="Chemistry">Chemistry</option>
-                <option value="Biology">Biology</option>
+                {availableSubjects.map((subName) => (
+                  <option key={subName} value={subName}>
+                    {subName}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

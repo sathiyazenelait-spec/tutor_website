@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { z } from "zod";
-import { Search, Plus, Film, Sparkles, Database, Play, Clock, User, Trash2, Loader2, Info } from "lucide-react";
+import { Search, Plus, Film, Sparkles, Database, Play, Clock, User, Trash2, Loader2, Info, BookOpen } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { Reveal } from "@/components/reveal";
 import { Button } from "@/components/ui/button";
@@ -9,15 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import { VideoPlayerModal, type LessonVideoData } from "@/components/video-player-modal";
 import { TutorUploadModal } from "@/components/tutor-upload-modal";
+import { TutorSubjectRequestModal } from "@/components/tutor-subject-request-modal";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
   q: z.string().optional(),
-  subject: z.enum(["All", "Mathematics", "Physics", "Chemistry", "Biology"]).optional(),
+  subject: z.string().optional(),
 });
 
-const subjectsList = ["All", "Mathematics", "Physics", "Chemistry", "Biology"] as const;
+const DEFAULT_SUBJECTS = ["All", "Mathematics", "Physics", "Chemistry", "Biology"];
 
 export const Route = createFileRoute("/library")({
   validateSearch: (search) => searchSchema.parse(search),
@@ -44,12 +45,28 @@ function LibraryPage() {
   const [videos, setVideos] = useState<LessonVideoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [subjectsList, setSubjectsList] = useState<string[]>(DEFAULT_SUBJECTS);
 
   const [selectedVideo, setSelectedVideo] = useState<LessonVideoData | null>(null);
   const [playerModalOpen, setPlayerModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [subjectRequestModalOpen, setSubjectRequestModalOpen] = useState(false);
 
   const isTutorOrAdmin = hasRole("TUTOR") || hasRole("ADMIN");
+  const isTutor = hasRole("TUTOR");
+
+  const fetchSubjects = async () => {
+    try {
+      const res = await fetch("http://localhost:8081/api/subjects");
+      if (res.ok) {
+        const data = await res.json();
+        const names = data.map((s: any) => s.name);
+        setSubjectsList(["All", ...names]);
+      }
+    } catch (e) {
+      // fallback to DEFAULT_SUBJECTS
+    }
+  };
 
   const fetchVideos = async () => {
     setLoading(true);
@@ -73,10 +90,14 @@ function LibraryPage() {
   };
 
   useEffect(() => {
+    fetchSubjects();
+  }, []);
+
+  useEffect(() => {
     fetchVideos();
   }, [subject]);
 
-  const update = (next: { q?: string | undefined; subject?: (typeof subjectsList)[number] | undefined }) =>
+  const update = (next: { q?: string | undefined; subject?: string | undefined }) =>
     navigate({ search: (prev) => ({ ...prev, ...next }), replace: true });
 
   const filteredVideos = videos.filter((v) => {
@@ -156,6 +177,18 @@ function LibraryPage() {
               >
                 <Plus className="size-4" />
                 <span>Upload Lesson & Sub-Clips</span>
+              </Button>
+            )}
+
+            {isTutor && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSubjectRequestModalOpen(true)}
+                className="rounded-full gap-2 px-4 border-primary/40 hover:bg-primary/10 text-primary"
+              >
+                <BookOpen className="size-4" />
+                <span>Suggest Subject</span>
               </Button>
             )}
           </div>
@@ -331,6 +364,13 @@ function LibraryPage() {
           </div>
         )}
       </section>
+
+      {/* TUTOR SUBJECT SUGGESTION MODAL */}
+      <TutorSubjectRequestModal
+        open={subjectRequestModalOpen}
+        onOpenChange={setSubjectRequestModalOpen}
+        onSuccess={fetchSubjects}
+      />
 
       {/* VIDEO PLAYER MODAL WITH SUB-REFERENCE CLIPS */}
       <VideoPlayerModal

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth, formatRole } from "@/lib/auth-context";
-import { Shield, GraduationCap, BookOpen, Database, ExternalLink, Loader2, CheckCircle2, User, Users, UserCog } from "lucide-react";
+import { Shield, GraduationCap, BookOpen, Database, ExternalLink, Loader2, CheckCircle2, User, Users, UserCog, Share2, Film } from "lucide-react";
 import { AdminUserManagementModal } from "@/components/admin-user-management-modal";
 
 interface DashboardModalProps {
@@ -17,6 +17,7 @@ export function DashboardModal({ open, onOpenChange }: DashboardModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [adminUserMgmtOpen, setAdminUserMgmtOpen] = useState(false);
+  const [sharedLessons, setSharedLessons] = useState<any[]>([]);
 
   useEffect(() => {
     if (!open || !user) return;
@@ -38,6 +39,15 @@ export function DashboardModal({ open, onOpenChange }: DashboardModalProps) {
         }
         const json = await res.json();
         setData(json);
+
+        if (user.role === "ROLE_STUDENT") {
+          try {
+            const sharedRes = await fetchWithAuth("/social/shared-with-me");
+            if (sharedRes.ok) {
+              setSharedLessons(await sharedRes.json());
+            }
+          } catch (e) {}
+        }
       } catch (err: any) {
         setError(err.message || "Failed to load authorized dashboard data");
       } finally {
@@ -115,6 +125,27 @@ export function DashboardModal({ open, onOpenChange }: DashboardModalProps) {
                       </div>
                       <p className="font-semibold text-sm">{data.upcomingLesson.subject}</p>
                       <p className="text-xs text-muted-foreground">Tutor: {data.upcomingLesson.tutor}</p>
+                    </div>
+                  )}
+
+                  {sharedLessons.length > 0 && (
+                    <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
+                      <h4 className="text-xs font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                        <Share2 className="size-3.5" />
+                        Lessons Shared with You by Friends ({sharedLessons.length})
+                      </h4>
+                      <div className="space-y-1.5">
+                        {sharedLessons.map((item: any) => (
+                          <div key={item.id} className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-background/80 border border-border/50">
+                            <div className="flex items-center gap-2">
+                              <Film className="size-3.5 text-primary" />
+                              <span className="font-semibold text-foreground">{item.video?.title}</span>
+                              <span className="text-muted-foreground text-[11px]">from {item.sender?.fullName || item.sender?.username}</span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground italic">"{item.message}"</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 

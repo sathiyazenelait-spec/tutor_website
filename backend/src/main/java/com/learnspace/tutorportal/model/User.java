@@ -25,6 +25,13 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    private String idNumber;
+    private String institution = "LearnSpace Tutor Haven";
+    private String grade = "Class 10 - 12";
+    private String specialization = "Mathematics & Sciences";
+    private String avatarUrl;
+    private boolean verified = true;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public User() {}
@@ -52,7 +59,24 @@ public class User {
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
 
+    public String getIdNumber() { return idNumber; }
+    public void setIdNumber(String idNumber) { this.idNumber = idNumber; }
+
+    public String getInstitution() { return institution; }
+    public void setInstitution(String institution) { this.institution = institution; }
+
+    public String getGrade() { return grade; }
+    public void setGrade(String grade) { this.grade = grade; }
+
+    public String getSpecialization() { return specialization; }
+    public void setSpecialization(String specialization) { this.specialization = specialization; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public boolean isVerified() { return verified; }
+    public void setVerified(boolean verified) { this.verified = verified; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }
-

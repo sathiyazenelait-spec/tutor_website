@@ -1,14 +1,7 @@
 package com.learnspace.tutorportal.config;
 
-import com.learnspace.tutorportal.model.LessonVideo;
-import com.learnspace.tutorportal.model.NoteSubExplanation;
-import com.learnspace.tutorportal.model.Role;
-import com.learnspace.tutorportal.model.SmartNote;
-import com.learnspace.tutorportal.model.SubReferenceClip;
-import com.learnspace.tutorportal.model.User;
-import com.learnspace.tutorportal.repository.LessonVideoRepository;
-import com.learnspace.tutorportal.repository.SmartNoteRepository;
-import com.learnspace.tutorportal.repository.UserRepository;
+import com.learnspace.tutorportal.model.*;
+import com.learnspace.tutorportal.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,12 +24,24 @@ public class DataInitializer implements CommandLineRunner {
     private SmartNoteRepository noteRepository;
 
     @Autowired
+    private SubjectEntityRepository subjectRepository;
+
+    @Autowired
+    private SubjectRequestRepository subjectRequestRepository;
+
+    @Autowired
+    private VideoCommentRepository commentRepository;
+
+    @Autowired
+    private FriendshipRepository friendshipRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
         if (userRepository.count() == 0) {
-            logger.info("Seeding initial demo users into H2 Database...");
+            logger.info("Seeding initial demo users and ID card data into H2 Database...");
 
             User student = new User(
                     "Alex Johnson",
@@ -44,6 +49,21 @@ public class DataInitializer implements CommandLineRunner {
                     passwordEncoder.encode("Student123!"),
                     Role.ROLE_STUDENT
             );
+            student.setIdNumber("LS-STU-2026-001");
+            student.setInstitution("Stanford Online High School");
+            student.setGrade("Class 11 - Honors STEM");
+            student.setSpecialization("Pure Mathematics & Quantum Mechanics");
+
+            User student2 = new User(
+                    "Sarah Chen",
+                    "sarah@learnspace.com",
+                    passwordEncoder.encode("Student123!"),
+                    Role.ROLE_STUDENT
+            );
+            student2.setIdNumber("LS-STU-2026-002");
+            student2.setInstitution("MIT Preparatory Academy");
+            student2.setGrade("Class 12 - Advanced Placement");
+            student2.setSpecialization("Applied Physics & Calculus");
 
             User tutor = new User(
                     "Dr. Elena Rostova",
@@ -51,6 +71,10 @@ public class DataInitializer implements CommandLineRunner {
                     passwordEncoder.encode("Tutor123!"),
                     Role.ROLE_TUTOR
             );
+            tutor.setIdNumber("LS-TUT-2026-002");
+            tutor.setInstitution("Department of Pure & Applied Mathematics");
+            tutor.setGrade("Distinguished Senior Faculty");
+            tutor.setSpecialization("Higher Algebra, Quadratic Analysis & Calculus");
 
             User admin = new User(
                     "System Administrator",
@@ -58,16 +82,39 @@ public class DataInitializer implements CommandLineRunner {
                     passwordEncoder.encode("Admin123!"),
                     Role.ROLE_ADMIN
             );
+            admin.setIdNumber("LS-ADM-2026-001");
+            admin.setInstitution("LearnSpace Haven Central Administration");
+            admin.setGrade("Executive Board");
+            admin.setSpecialization("Platform Architecture & Academic Accreditation");
 
-            userRepository.save(student);
+            User savedStudent = userRepository.save(student);
+            User savedStudent2 = userRepository.save(student2);
             User savedTutor = userRepository.save(tutor);
             userRepository.save(admin);
 
-            logger.info("Demo users seeded successfully in H2 DB.");
+            // Seed initial friendship between Alex and Sarah
+            friendshipRepository.save(new Friendship(savedStudent.getId(), savedStudent2.getId(), savedStudent2.getName(), savedStudent2.getEmail()));
+            friendshipRepository.save(new Friendship(savedStudent2.getId(), savedStudent.getId(), savedStudent.getName(), savedStudent.getEmail()));
+
+            logger.info("Demo users and friendships seeded successfully in H2 DB.");
+
+            // Seed initial subjects
+            subjectRepository.save(new SubjectEntity("Mathematics", "Algebra, Geometry, Calculus & Number Theory"));
+            subjectRepository.save(new SubjectEntity("Physics", "Classical Mechanics, Optics, Electromagnetism & Quantum"));
+            subjectRepository.save(new SubjectEntity("Chemistry", "Organic, Inorganic & Physical Thermodynamics"));
+            subjectRepository.save(new SubjectEntity("Biology", "Genetics, Cellular Biology & Physiology"));
+            subjectRepository.save(new SubjectEntity("Computer Science", "Algorithms, Data Structures & Python Programming"));
+
+            // Seed a pending tutor subject suggestion for Admin to review
+            SubjectRequest aiRequest = new SubjectRequest(
+                    "Artificial Intelligence & Machine Learning",
+                    "Foundational course covering Neural Networks, Gradient Descent, Matrix Calculus and NLP for high-school honors students.",
+                    savedTutor.getId(),
+                    savedTutor.getName()
+            );
+            subjectRequestRepository.save(aiRequest);
 
             // Seed initial Lesson Videos with Sub-reference Keypoint Formula Clips
-            logger.info("Seeding initial Lesson Videos with Sub-reference Clips into H2 Database...");
-
             LessonVideo mathLesson = new LessonVideo(
                     "Algebraic Identities & Quadratic Expansions",
                     "Mathematics",
@@ -77,6 +124,9 @@ public class DataInitializer implements CommandLineRunner {
                     savedTutor.getId(),
                     savedTutor.getName()
             );
+            mathLesson.setLikes(34);
+            mathLesson.setRating(4.9);
+            mathLesson.setRatingCount(18);
 
             mathLesson.addSubReference(new SubReferenceClip(
                     "02:15",
@@ -94,14 +144,6 @@ public class DataInitializer implements CommandLineRunner {
                     "Cross-multiplying terms shows +ab and -ab cancel out completely, yielding a² - b²."
             ));
 
-            mathLesson.addSubReference(new SubReferenceClip(
-                    "11:10",
-                    "Quadratic Formula Derivation",
-                    "x = (-b ± √(b² - 4ac)) / (2a)",
-                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
-                    "Applying completing-the-square method to the canonical equation ax² + bx + c = 0."
-            ));
-
             LessonVideo physicsLesson = new LessonVideo(
                     "Classical Dynamics & Newton's Second Law",
                     "Physics",
@@ -111,6 +153,9 @@ public class DataInitializer implements CommandLineRunner {
                     savedTutor.getId(),
                     savedTutor.getName()
             );
+            physicsLesson.setLikes(28);
+            physicsLesson.setRating(4.8);
+            physicsLesson.setRatingCount(12);
 
             physicsLesson.addSubReference(new SubReferenceClip(
                     "03:45",
@@ -120,19 +165,26 @@ public class DataInitializer implements CommandLineRunner {
                     "Net vector force is proportional to the rate of change of linear momentum over time."
             ));
 
-            physicsLesson.addSubReference(new SubReferenceClip(
-                    "08:15",
-                    "Kinetic Energy Work Theorem",
-                    "W_net = ΔK = ½mv_f² - ½mv_i²",
-                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-                    "Integrating force with respect to displacement demonstrates change in kinetic energy."
-            ));
-
-            videoRepository.save(mathLesson);
+            LessonVideo savedMath = videoRepository.save(mathLesson);
             videoRepository.save(physicsLesson);
 
-            // Seed initial Smart Notes into H2 DB with sub-explanation terms/buttons
-            logger.info("Seeding initial Smart Notes with Sub-Explanations into H2 Database...");
+            // Seed initial student comments
+            commentRepository.save(new VideoComment(
+                    savedMath.getId(),
+                    savedStudent.getId(),
+                    savedStudent.getName(),
+                    "ROLE_STUDENT",
+                    "The attached clip at 02:15 for (a+b)² made the 2ab rectangle area completely intuitive! Thank you Dr. Elena!"
+            ));
+            commentRepository.save(new VideoComment(
+                    savedMath.getId(),
+                    savedStudent2.getId(),
+                    savedStudent2.getName(),
+                    "ROLE_STUDENT",
+                    "Shared this with my study group via WhatsApp. The geometric proof is brilliant."
+            ));
+
+            // Seed initial Smart Notes
             SmartNote mathNote = new SmartNote(
                     "Square of a Sum (a + b)² Explained",
                     "Mathematics",
@@ -178,7 +230,7 @@ public class DataInitializer implements CommandLineRunner {
 
             noteRepository.save(mathNote);
 
-            logger.info("Initial data successfully seeded into H2 Database!");
+            logger.info("Complete ecosystem with subjects, friendships, comments, and ID cards seeded into H2 DB!");
         }
     }
 }
