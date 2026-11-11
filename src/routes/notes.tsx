@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Heart, Bookmark, Share2, Star, Sparkles, Plus, BookOpen, Trash2, Database, Loader2, Play, User, Film } from "lucide-react";
+import { Heart, Bookmark, Share2, Star, Sparkles, Plus, BookOpen, Trash2, Pencil, ShieldCheck, Database, Loader2, Play, User, Film } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { FormulaTerm, ExplanationPanel } from "@/components/smart-formula";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ export const Route = createFileRoute("/notes")({
 function NotesPage() {
   const { user, hasRole, fetchWithAuth } = useAuth();
   const isTutorOrAdmin = hasRole("TUTOR") || hasRole("ADMIN");
+  const isAdmin = hasRole("ADMIN");
 
   const [notes, setNotes] = useState<SmartNoteData[]>([]);
   const [selectedNote, setSelectedNote] = useState<SmartNoteData | null>(null);
@@ -58,6 +59,7 @@ function NotesPage() {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [editTargetNote, setEditTargetNote] = useState<SmartNoteData | null>(null);
 
   const fetchNotes = async () => {
     setLoading(true);
@@ -182,6 +184,13 @@ function NotesPage() {
             <span>Stored in H2 In-Memory Database</span>
           </div>
 
+          {isAdmin && (
+            <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+              <ShieldCheck className="size-3.5" />
+              <span>Admin Controls: Edit & Delete All Notes</span>
+            </div>
+          )}
+
           {isTutorOrAdmin && (
             <Button
               variant="hero"
@@ -220,15 +229,31 @@ function NotesPage() {
           </div>
 
           {isTutorOrAdmin && selectedNote && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleDeleteNote(selectedNote.id)}
-              className="text-xs text-destructive hover:bg-destructive/10 gap-1.5"
-            >
-              <Trash2 className="size-3.5" />
-              <span>Delete Note</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEditTargetNote(selectedNote);
+                  setUploadModalOpen(true);
+                }}
+                className="text-xs text-primary border-primary/30 hover:bg-primary/10 gap-1.5"
+                title="Edit Smart Note & Sub-Explanations (Admin/Tutor)"
+              >
+                <Pencil className="size-3.5" />
+                <span>Edit Note</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteNote(selectedNote.id)}
+                className="text-xs text-destructive hover:bg-destructive/10 gap-1.5"
+                title="Delete from H2 database (Admin/Tutor)"
+              >
+                <Trash2 className="size-3.5" />
+                <span>Delete Note</span>
+              </Button>
+            </div>
           )}
         </div>
 
@@ -389,11 +414,15 @@ function NotesPage() {
         )}
       </section>
 
-      {/* TUTOR CREATE NOTE MODAL */}
+      {/* TUTOR / ADMIN CREATE & EDIT NOTE MODAL */}
       <TutorNoteModal
         open={uploadModalOpen}
-        onOpenChange={setUploadModalOpen}
+        onOpenChange={(val) => {
+          setUploadModalOpen(val);
+          if (!val) setEditTargetNote(null);
+        }}
         onSuccess={fetchNotes}
+        editNote={editTargetNote}
       />
     </>
   );

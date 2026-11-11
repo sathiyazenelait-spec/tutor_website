@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth, formatRole } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Shield, GraduationCap, BookOpen, Trash2, UserPlus, Search, Loader2, Database, RefreshCw, ArrowLeftRight, CheckCircle2, XCircle, Plus, BookCheck } from "lucide-react";
+import { Shield, GraduationCap, BookOpen, Trash2, UserPlus, Search, Loader2, Database, RefreshCw, ArrowLeftRight, CheckCircle2, XCircle, Plus, BookCheck, Film, Pencil, Sparkles } from "lucide-react";
+import { TutorUploadModal } from "@/components/tutor-upload-modal";
+import { TutorNoteModal } from "@/components/tutor-note-modal";
 
 interface AdminUser {
   id: number;
@@ -65,6 +67,14 @@ export function AdminUserManagementModal({ open, onOpenChange }: AdminUserManage
   const [newSubjectDesc, setNewSubjectDesc] = useState("");
   const [isAddingSubject, setIsAddingSubject] = useState(false);
 
+  // Content (Videos & Notes) state
+  const [contentVideos, setContentVideos] = useState<any[]>([]);
+  const [contentNotes, setContentNotes] = useState<any[]>([]);
+  const [adminEditVideo, setAdminEditVideo] = useState<any | null>(null);
+  const [adminEditVideoOpen, setAdminEditVideoOpen] = useState(false);
+  const [adminEditNote, setAdminEditNote] = useState<any | null>(null);
+  const [adminEditNoteOpen, setAdminEditNoteOpen] = useState(false);
+
   const fetchUsers = async () => {
     if (!open) return;
     setLoading(true);
@@ -92,10 +102,47 @@ export function AdminUserManagementModal({ open, onOpenChange }: AdminUserManage
     } catch (e) {}
   };
 
+  const fetchContent = async () => {
+    if (!open) return;
+    try {
+      const [vRes, nRes] = await Promise.all([
+        fetch("http://localhost:8081/api/videos"),
+        fetch("http://localhost:8081/api/notes"),
+      ]);
+      if (vRes.ok) setContentVideos(await vRes.json());
+      if (nRes.ok) setContentNotes(await nRes.json());
+    } catch (e) {}
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchSubjectsAndRequests();
+    fetchContent();
   }, [open]);
+
+  const handleAdminDeleteVideo = async (id: number, title: string) => {
+    if (!confirm(`Admin: Permanently delete lesson "${title}" from H2 database?`)) return;
+    try {
+      const res = await fetchWithAuth(`/admin/videos/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      toast.success(`Video "${title}" deleted by Admin.`);
+      fetchContent();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete video");
+    }
+  };
+
+  const handleAdminDeleteNote = async (id: number, title: string) => {
+    if (!confirm(`Admin: Permanently delete smart note "${title}" from H2 database?`)) return;
+    try {
+      const res = await fetchWithAuth(`/admin/notes/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      toast.success(`Smart note "${title}" deleted by Admin.`);
+      fetchContent();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete note");
+    }
+  };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -265,19 +312,23 @@ export function AdminUserManagementModal({ open, onOpenChange }: AdminUserManage
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full pt-1">
-          <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/60">
-            <TabsTrigger value="users" className="gap-2">
-              <GraduationCap className="size-4" />
-              <span>Maintain Students & Tutors ({users.length})</span>
+          <TabsList className="grid w-full grid-cols-3 mb-4 bg-muted/60">
+            <TabsTrigger value="users" className="gap-1.5 text-xs">
+              <GraduationCap className="size-3.5" />
+              <span>Users ({users.length})</span>
             </TabsTrigger>
-            <TabsTrigger value="subjects" className="gap-2">
-              <BookCheck className="size-4" />
-              <span>Subjects & Tutor Suggestions</span>
+            <TabsTrigger value="subjects" className="gap-1.5 text-xs">
+              <BookCheck className="size-3.5" />
+              <span>Subjects & Requests</span>
               {pendingRequests.length > 0 && (
-                <Badge className="size-5 p-0 grid place-items-center rounded-full bg-amber-500 text-white text-[10px]">
+                <Badge className="size-4 p-0 grid place-items-center rounded-full bg-amber-500 text-white text-[10px]">
                   {pendingRequests.length}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="content" className="gap-1.5 text-xs">
+              <Film className="size-3.5" />
+              <span>Lessons & Notes ({contentVideos.length + contentNotes.length})</span>
             </TabsTrigger>
           </TabsList>
 
@@ -642,7 +693,177 @@ export function AdminUserManagementModal({ open, onOpenChange }: AdminUserManage
               </div>
             </div>
           </TabsContent>
+
+          {/* TAB 3: ADMIN CONTENT MANAGEMENT (VIDEOS & NOTES) */}
+          <TabsContent value="content" className="space-y-5">
+            {/* 1. VIDEO LESSONS SECTION */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase font-mono font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Film className="size-3.5 text-primary" />
+                  Video Lessons in H2 Database ({contentVideos.length})
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setAdminEditVideo(null);
+                    setAdminEditVideoOpen(true);
+                  }}
+                  className="h-7 text-xs gap-1 border-primary/30 text-primary"
+                >
+                  <Plus className="size-3" />
+                  <span>Add Lesson</span>
+                </Button>
+              </div>
+
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {contentVideos.map((video) => (
+                  <div
+                    key={video.id}
+                    className="flex items-center justify-between p-3 rounded-xl border border-border/70 bg-card text-xs hover:border-primary/40 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1 pr-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground truncate">{video.title}</span>
+                        <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                          {video.subject}
+                        </Badge>
+                        {video.subReferences && video.subReferences.length > 0 && (
+                          <Badge variant="secondary" className="text-[10px] py-0 px-1.5 text-primary">
+                            {video.subReferences.length} formula clips
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Tutor: <span className="text-foreground/80 font-medium">{video.tutorName}</span> • Duration: {video.duration}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setAdminEditVideo(video);
+                          setAdminEditVideoOpen(true);
+                        }}
+                        className="h-7 px-2 text-primary hover:bg-primary/10 gap-1"
+                        title="Admin Edit Video & Attached Clips"
+                      >
+                        <Pencil className="size-3" />
+                        <span>Edit</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAdminDeleteVideo(video.id, video.title)}
+                        className="h-7 px-2 text-destructive hover:bg-destructive/10 gap-1"
+                        title="Admin Delete Video from H2 DB"
+                      >
+                        <Trash2 className="size-3" />
+                        <span>Delete</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. SMART FORMULA NOTES SECTION */}
+            <div className="space-y-2 pt-2 border-t border-border/50">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase font-mono font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <BookOpen className="size-3.5 text-primary" />
+                  Interactive Smart Notes in H2 Database ({contentNotes.length})
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setAdminEditNote(null);
+                    setAdminEditNoteOpen(true);
+                  }}
+                  className="h-7 text-xs gap-1 border-primary/30 text-primary"
+                >
+                  <Plus className="size-3" />
+                  <span>Add Note</span>
+                </Button>
+              </div>
+
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {contentNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="flex items-center justify-between p-3 rounded-xl border border-border/70 bg-card text-xs hover:border-primary/40 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1 pr-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground truncate">{note.title}</span>
+                        <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                          {note.subject}
+                        </Badge>
+                        {note.subExplanations && note.subExplanations.length > 0 && (
+                          <Badge variant="secondary" className="text-[10px] py-0 px-1.5 text-primary">
+                            {note.subExplanations.length} interactive buttons
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-math text-foreground/80 mt-0.5 truncate">
+                        {note.formula}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Tutor: {note.tutorName} • {note.chapter}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setAdminEditNote(note);
+                          setAdminEditNoteOpen(true);
+                        }}
+                        className="h-7 px-2 text-primary hover:bg-primary/10 gap-1"
+                        title="Admin Edit Smart Note & Word/Line Buttons"
+                      >
+                        <Pencil className="size-3" />
+                        <span>Edit</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleAdminDeleteNote(note.id, note.title)}
+                        className="h-7 px-2 text-destructive hover:bg-destructive/10 gap-1"
+                        title="Admin Delete Smart Note from H2 DB"
+                      >
+                        <Trash2 className="size-3" />
+                        <span>Delete</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
+
+        {/* ADMIN EDIT VIDEO MODAL */}
+        <TutorUploadModal
+          open={adminEditVideoOpen}
+          onOpenChange={setAdminEditVideoOpen}
+          onSuccess={fetchContent}
+          editVideo={adminEditVideo}
+        />
+
+        {/* ADMIN EDIT NOTE MODAL */}
+        <TutorNoteModal
+          open={adminEditNoteOpen}
+          onOpenChange={setAdminEditNoteOpen}
+          onSuccess={fetchContent}
+          editNote={adminEditNote}
+        />
 
         <div className="flex items-center justify-between pt-3 border-t border-border/50 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">

@@ -100,7 +100,55 @@ public class VideoLibraryController {
                 .body(new MessageResponse("Video not found", false)));
     }
 
-    @DeleteMapping("/tutor/videos/{id}")
+    @PutMapping({"/tutor/videos/{id}", "/admin/videos/{id}"})
+    @PreAuthorize("hasRole('TUTOR') or hasRole('ADMIN')")
+    public ResponseEntity<?> updateVideoLesson(
+            @PathVariable Long id,
+            @Valid @RequestBody LessonVideoRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        return videoRepository.findById(id).<ResponseEntity<?>>map(video -> {
+            boolean isOwner = video.getTutorId() != null && video.getTutorId().equals(userDetails.getId());
+            boolean isAdmin = userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            if (!isOwner && !isAdmin) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new MessageResponse("You are not authorized to edit this video lesson", false));
+            }
+
+            video.setTitle(request.getTitle().trim());
+            video.setSubject(request.getSubject().trim());
+            video.setDescription(request.getDescription());
+            video.setVideoUrl(request.getVideoUrl().trim());
+            if (request.getDuration() != null && !request.getDuration().isBlank()) {
+                video.setDuration(request.getDuration().trim());
+            }
+
+            // Replace sub-reference formula clips
+            video.getSubReferences().clear();
+            if (request.getSubReferences() != null) {
+                for (SubReferenceRequest subReq : request.getSubReferences()) {
+                    if (subReq.getKeypointTitle() != null && !subReq.getKeypointTitle().isBlank()) {
+                        SubReferenceClip clip = new SubReferenceClip(
+                                subReq.getTimestamp(),
+                                subReq.getKeypointTitle().trim(),
+                                subReq.getFormulaOrConcept().trim(),
+                                subReq.getClipVideoUrl(),
+                                subReq.getExplanation()
+                        );
+                        video.addSubReference(clip);
+                    }
+                }
+            }
+
+            LessonVideo updated = videoRepository.save(video);
+            return ResponseEntity.ok(updated);
+        }).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new MessageResponse("Video not found with id: " + id, false)));
+    }
+
+    @DeleteMapping({"/tutor/videos/{id}", "/admin/videos/{id}"})
     @PreAuthorize("hasRole('TUTOR') or hasRole('ADMIN')")
     public ResponseEntity<?> deleteVideoLesson(
             @PathVariable Long id,

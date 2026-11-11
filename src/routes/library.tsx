@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { z } from "zod";
-import { Search, Plus, Film, Sparkles, Database, Play, Clock, User, Trash2, Loader2, Info, BookOpen } from "lucide-react";
+import { Search, Plus, Film, Sparkles, Database, Play, Clock, User, Trash2, Pencil, Loader2, Info, BookOpen, ShieldCheck } from "lucide-react";
 import { PageHero } from "@/components/page-hero";
 import { Reveal } from "@/components/reveal";
 import { Button } from "@/components/ui/button";
@@ -50,9 +50,11 @@ function LibraryPage() {
   const [selectedVideo, setSelectedVideo] = useState<LessonVideoData | null>(null);
   const [playerModalOpen, setPlayerModalOpen] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [editTargetVideo, setEditTargetVideo] = useState<LessonVideoData | null>(null);
   const [subjectRequestModalOpen, setSubjectRequestModalOpen] = useState(false);
 
   const isTutorOrAdmin = hasRole("TUTOR") || hasRole("ADMIN");
+  const isAdmin = hasRole("ADMIN");
   const isTutor = hasRole("TUTOR");
 
   const fetchSubjects = async () => {
@@ -215,14 +217,19 @@ function LibraryPage() {
             ))}
           </div>
 
-          {isTutorOrAdmin ? (
+          {isAdmin ? (
+            <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full">
+              <ShieldCheck className="size-3.5" />
+              <span>Admin Mode: Full Edit and Delete permissions across all lessons</span>
+            </div>
+          ) : isTutor ? (
             <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">
               <Sparkles className="size-3.5" />
               <span>Tutor Mode Active: You can upload lessons with unlimited size</span>
             </div>
           ) : (
             <div className="text-xs text-muted-foreground">
-              Sign in as Tutor (`tutor@learnspace.com`) to add video lessons & formula clips.
+              Sign in as Tutor or Admin to add & manage video lessons.
             </div>
           )}
         </div>
@@ -347,14 +354,28 @@ function LibraryPage() {
                       </span>
 
                       {isTutorOrAdmin && (
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteVideo(e, video.id)}
-                          className="size-7 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-destructive grid place-items-center transition-colors"
-                          title="Delete from H2 database"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditTargetVideo(video);
+                              setUploadModalOpen(true);
+                            }}
+                            className="size-7 rounded-md hover:bg-primary/20 text-muted-foreground hover:text-primary grid place-items-center transition-colors"
+                            title="Edit Video Lesson & Formula Clips (Admin/Tutor)"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteVideo(e, video.id)}
+                            className="size-7 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-destructive grid place-items-center transition-colors"
+                            title="Delete from H2 database (Admin/Tutor)"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -379,11 +400,15 @@ function LibraryPage() {
         onOpenChange={setPlayerModalOpen}
       />
 
-      {/* TUTOR UPLOAD MODAL */}
+      {/* TUTOR / ADMIN UPLOAD & EDIT MODAL */}
       <TutorUploadModal
         open={uploadModalOpen}
-        onOpenChange={setUploadModalOpen}
+        onOpenChange={(val) => {
+          setUploadModalOpen(val);
+          if (!val) setEditTargetVideo(null);
+        }}
         onSuccess={fetchVideos}
+        editVideo={editTargetVideo}
       />
     </>
   );

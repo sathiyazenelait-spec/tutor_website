@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,9 +21,10 @@ interface TutorNoteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  editNote?: any | null;
 }
 
-export function TutorNoteModal({ open, onOpenChange, onSuccess }: TutorNoteModalProps) {
+export function TutorNoteModal({ open, onOpenChange, onSuccess, editNote }: TutorNoteModalProps) {
   const { fetchWithAuth } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -49,6 +50,49 @@ export function TutorNoteModal({ open, onOpenChange, onSuccess }: TutorNoteModal
       clipUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
     },
   ]);
+
+  useEffect(() => {
+    if (editNote) {
+      setTitle(editNote.title || "");
+      setSubject(editNote.subject || "Mathematics");
+      setChapter(editNote.chapter || "Core Formulas");
+      setFormula(editNote.formula || "");
+      setContent(editNote.content || "");
+      if (editNote.subExplanations && editNote.subExplanations.length > 0) {
+        setSubExplanations(
+          editNote.subExplanations.map((s: any) => ({
+            termKey: s.termKey || s.termLabel || "term",
+            termLabel: s.termLabel || "",
+            explanationTitle: s.explanationTitle || "",
+            explanationContent: s.explanationContent || "",
+            clipUrl: s.clipUrl || "",
+          }))
+        );
+      } else {
+        setSubExplanations([]);
+      }
+    } else {
+      setTitle("");
+      setFormula("");
+      setContent("");
+      setSubExplanations([
+        {
+          termKey: "2ab",
+          termLabel: "2ab",
+          explanationTitle: "Why the cross-term 2ab appears",
+          explanationContent: "Multiplying (a+b)(a+b) gives a·b + b·a. Commutativity makes them combine into 2ab, forming two symmetric rectangles.",
+          clipUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4",
+        },
+        {
+          termKey: "a2",
+          termLabel: "a²",
+          explanationTitle: "First square area term a²",
+          explanationContent: "The upper-left square created by the first term multiplied by itself: a × a = a².",
+          clipUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        },
+      ]);
+    }
+  }, [open, editNote]);
 
   const addSubExplanation = () => {
     setSubExplanations((prev) => [
@@ -115,8 +159,11 @@ export function TutorNoteModal({ open, onOpenChange, onSuccess }: TutorNoteModal
         subExplanations: subExplanations.filter((s) => s.termLabel.trim() !== ""),
       };
 
-      const res = await fetchWithAuth("/tutor/notes", {
-        method: "POST",
+      const url = editNote ? `/tutor/notes/${editNote.id}` : "/tutor/notes";
+      const method = editNote ? "PUT" : "POST";
+
+      const res = await fetchWithAuth(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -126,7 +173,11 @@ export function TutorNoteModal({ open, onOpenChange, onSuccess }: TutorNoteModal
         throw new Error(errorData.message || "Failed to save smart note in H2 database");
       }
 
-      toast.success("Smart Note with interactive sub-explanation buttons saved to H2 Database!");
+      toast.success(
+        editNote
+          ? "Smart Note updated successfully in H2 Database!"
+          : "Smart Note with interactive sub-explanation buttons saved to H2 Database!"
+      );
       onSuccess();
       onOpenChange(false);
 
@@ -152,10 +203,12 @@ export function TutorNoteModal({ open, onOpenChange, onSuccess }: TutorNoteModal
               </div>
               <div>
                 <DialogTitle className="text-xl font-display font-semibold">
-                  Create Interactive Smart Note
+                  {editNote ? "Edit Interactive Smart Note" : "Create Interactive Smart Note"}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Add notes where students can click specific words & lines as buttons to see sub-explanations
+                  {editNote
+                    ? "Update explanation text, formula, and attached word/line sub-explanation buttons in H2"
+                    : "Add notes where students can click specific words & lines as buttons to see sub-explanations"}
                 </DialogDescription>
               </div>
             </div>
@@ -345,6 +398,8 @@ export function TutorNoteModal({ open, onOpenChange, onSuccess }: TutorNoteModal
                   <>
                     <Loader2 className="size-4 animate-spin" /> Saving to H2...
                   </>
+                ) : editNote ? (
+                  "Update Smart Note"
                 ) : (
                   "Save Smart Note"
                 )}

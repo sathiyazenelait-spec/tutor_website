@@ -21,9 +21,10 @@ interface TutorUploadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  editVideo?: any | null;
 }
 
-export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadModalProps) {
+export function TutorUploadModal({ open, onOpenChange, onSuccess, editVideo }: TutorUploadModalProps) {
   const { user, fetchWithAuth } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +37,7 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
   const [description, setDescription] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [duration, setDuration] = useState("14:30");
+  const [subRefs, setSubRefs] = useState<SubRefDraft[]>([]);
 
   useEffect(() => {
     fetch("http://localhost:8081/api/subjects")
@@ -44,7 +46,7 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
         if (Array.isArray(data) && data.length > 0) {
           const names = data.map((d: any) => d.name);
           setAvailableSubjects(names);
-          if (!names.includes(subject)) {
+          if (!names.includes(subject) && !editVideo) {
             setSubject(names[0]);
           }
         }
@@ -52,15 +54,46 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
       .catch(() => {});
   }, [open]);
 
-  const [subRefs, setSubRefs] = useState<SubRefDraft[]>([
-    {
-      timestamp: "03:15",
-      keypointTitle: "Expansion Formula Breakdown",
-      formulaOrConcept: "(a + b)² = a² + 2ab + b²",
-      clipVideoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-      explanation: "Attached sub-reference video clip explaining the geometric meaning of 2ab and square areas.",
-    },
-  ]);
+  useEffect(() => {
+    if (editVideo) {
+      setTitle(editVideo.title || "");
+      setSubject(editVideo.subject || "Mathematics");
+      setDescription(editVideo.description || "");
+      setVideoUrl(editVideo.videoUrl || "");
+      setDuration(editVideo.duration || "14:30");
+      setSelectedFileName(null);
+      setSelectedFileSize(null);
+      if (editVideo.subReferences && editVideo.subReferences.length > 0) {
+        setSubRefs(
+          editVideo.subReferences.map((r: any) => ({
+            timestamp: r.timestamp || "00:00",
+            keypointTitle: r.keypointTitle || "",
+            formulaOrConcept: r.formulaOrConcept || "",
+            clipVideoUrl: r.clipVideoUrl || "",
+            explanation: r.explanation || "",
+          }))
+        );
+      } else {
+        setSubRefs([]);
+      }
+    } else {
+      setTitle("");
+      setDescription("");
+      setVideoUrl("");
+      setSelectedFileName(null);
+      setSelectedFileSize(null);
+      setDuration("14:30");
+      setSubRefs([
+        {
+          timestamp: "03:15",
+          keypointTitle: "Expansion Formula Breakdown",
+          formulaOrConcept: "(a + b)² = a² + 2ab + b²",
+          clipVideoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+          explanation: "Attached sub-reference video clip explaining the geometric meaning of 2ab and square areas.",
+        },
+      ]);
+    }
+  }, [open, editVideo]);
 
   const handleFileBrowse = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -151,8 +184,11 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
         subReferences: subRefs.filter((r) => r.keypointTitle.trim() !== ""),
       };
 
-      const res = await fetchWithAuth("/tutor/videos", {
-        method: "POST",
+      const url = editVideo ? `/tutor/videos/${editVideo.id}` : "/tutor/videos";
+      const method = editVideo ? "PUT" : "POST";
+
+      const res = await fetchWithAuth(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -162,7 +198,11 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
         throw new Error(errorData.message || "Failed to save lesson video in H2 database");
       }
 
-      toast.success("Lesson video and sub-reference formula clips saved to H2 Database!");
+      toast.success(
+        editVideo
+          ? "Lesson video and formula clips updated successfully in H2 Database!"
+          : "Lesson video and sub-reference formula clips saved to H2 Database!"
+      );
       onSuccess();
       onOpenChange(false);
 
@@ -190,10 +230,12 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
               </div>
               <div>
                 <DialogTitle className="text-xl font-display font-semibold">
-                  Upload Lesson Video & Sub-Reference Clips
+                  {editVideo ? "Edit Lesson Video & Formula Clips" : "Upload Lesson Video & Sub-Reference Clips"}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Store new video lessons with unlimited file size or web URLs into H2 Database
+                  {editVideo
+                    ? "Modify title, subject, stream URL, and attached formula keypoint clips in H2 Database"
+                    : "Store new video lessons with unlimited file size or web URLs into H2 Database"}
                 </DialogDescription>
               </div>
             </div>
@@ -435,6 +477,8 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
                   <>
                     <Loader2 className="size-4 animate-spin" /> Saving to H2...
                   </>
+                ) : editVideo ? (
+                  "Update Video Lesson"
                 ) : (
                   "Save Video Lesson"
                 )}

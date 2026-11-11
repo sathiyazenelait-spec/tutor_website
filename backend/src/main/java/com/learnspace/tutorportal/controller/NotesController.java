@@ -76,7 +76,55 @@ public class NotesController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @DeleteMapping("/tutor/notes/{id}")
+    @PutMapping({"/tutor/notes/{id}", "/admin/notes/{id}"})
+    @PreAuthorize("hasRole('TUTOR') or hasRole('ADMIN')")
+    public ResponseEntity<?> updateNote(
+            @PathVariable Long id,
+            @Valid @RequestBody SmartNoteRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        return noteRepository.findById(id).<ResponseEntity<?>>map(note -> {
+            boolean isOwner = note.getTutorId() != null && note.getTutorId().equals(userDetails.getId());
+            boolean isAdmin = userDetails.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            if (!isOwner && !isAdmin) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new MessageResponse("You are not authorized to edit this note", false));
+            }
+
+            note.setTitle(request.getTitle().trim());
+            note.setSubject(request.getSubject().trim());
+            if (request.getChapter() != null) {
+                note.setChapter(request.getChapter().trim());
+            }
+            note.setFormula(request.getFormula().trim());
+            note.setContent(request.getContent().trim());
+
+            // Replace sub-explanations
+            note.getSubExplanations().clear();
+            if (request.getSubExplanations() != null) {
+                for (SubExplanationRequest subReq : request.getSubExplanations()) {
+                    if (subReq.getTermLabel() != null && !subReq.getTermLabel().isBlank()) {
+                        NoteSubExplanation sub = new NoteSubExplanation(
+                                subReq.getTermKey() != null ? subReq.getTermKey().trim() : subReq.getTermLabel().trim(),
+                                subReq.getTermLabel().trim(),
+                                subReq.getExplanationTitle().trim(),
+                                subReq.getExplanationContent().trim(),
+                                subReq.getClipUrl()
+                        );
+                        note.addSubExplanation(sub);
+                    }
+                }
+            }
+
+            SmartNote updated = noteRepository.save(note);
+            return ResponseEntity.ok(updated);
+        }).orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new MessageResponse("Note not found with id: " + id, false)));
+    }
+
+    @DeleteMapping({"/tutor/notes/{id}", "/admin/notes/{id}"})
     @PreAuthorize("hasRole('TUTOR') or hasRole('ADMIN')")
     public ResponseEntity<?> deleteNote(
             @PathVariable Long id,
