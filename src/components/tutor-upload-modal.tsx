@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Plus, Trash2, Film, Sparkles, Loader2, Database } from "lucide-react";
+import { Plus, Trash2, Film, Sparkles, Loader2, Database, Upload, FolderOpen, CheckCircle2 } from "lucide-react";
 
 interface SubRefDraft {
   timestamp: string;
@@ -25,6 +26,9 @@ interface TutorUploadModalProps {
 export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadModalProps) {
   const { user, fetchWithAuth } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [selectedFileSize, setSelectedFileSize] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("Mathematics");
@@ -41,6 +45,28 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
       explanation: "Attached sub-reference video clip explaining the geometric meaning of 2ab and square areas.",
     },
   ]);
+
+  const handleFileBrowse = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Unlimited size allowed - create an object URL for playback
+    const objectUrl = URL.createObjectURL(file);
+    setVideoUrl(objectUrl);
+    setSelectedFileName(file.name);
+
+    // Format size
+    const sizeInMB = (file.size / (1024 * 1024)).toFixed(1);
+    setSelectedFileSize(`${sizeInMB} MB`);
+
+    if (!title) {
+      // Auto-populate title from filename
+      const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+      setTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
+    }
+
+    toast.success(`Video loaded: ${file.name} (${sizeInMB} MB)`);
+  };
 
   const addSubRef = () => {
     setSubRefs((prev) => [
@@ -73,6 +99,8 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
     setDescription("Comprehensive lecture deriving sin²θ + cos²θ = 1 and reciprocal trigonometric ratios with unit circles.");
     setVideoUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4");
     setDuration("17:45");
+    setSelectedFileName(null);
+    setSelectedFileSize(null);
     setSubRefs([
       {
         timestamp: "04:10",
@@ -94,7 +122,7 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !videoUrl || !subject) {
-      toast.error("Please fill in the title, subject, and video URL.");
+      toast.error("Please fill in the title, subject, and browse or enter a video URL.");
       return;
     }
 
@@ -128,6 +156,8 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
       setTitle("");
       setDescription("");
       setVideoUrl("");
+      setSelectedFileName(null);
+      setSelectedFileSize(null);
     } catch (err: any) {
       toast.error(err.message || "Upload failed");
     } finally {
@@ -137,9 +167,9 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-2xl border-border shadow-2xl p-6">
+      <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-2xl border-border shadow-2xl p-6">
         <DialogHeader className="border-b border-border/50 pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
                 <Film className="size-5" />
@@ -149,7 +179,7 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
                   Upload Lesson Video & Sub-Reference Clips
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">
-                  Store new video lessons with formula clips directly into H2 Database
+                  Store new video lessons with unlimited file size or web URLs into H2 Database
                 </DialogDescription>
               </div>
             </div>
@@ -167,6 +197,7 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* TITLE & SUBJECT */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="video-title">Lesson Title</Label>
@@ -195,6 +226,7 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
             </div>
           </div>
 
+          {/* DESCRIPTION */}
           <div className="space-y-1.5">
             <Label htmlFor="video-desc">Description</Label>
             <Textarea
@@ -206,27 +238,70 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess }: TutorUploadM
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="video-url">Video Stream / File URL</Label>
+          {/* VIDEO BROWSE & URL SECTION (UNLIMITED SIZE) */}
+          <div className="space-y-2 p-3.5 rounded-xl border border-primary/20 bg-primary/5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-primary flex items-center gap-1.5">
+                <Upload className="size-3.5" />
+                Lesson Video Source (Browse Local File or Enter Web URL)
+              </Label>
+              <Badge variant="outline" className="text-[10px] font-mono border-primary/30 text-primary">
+                Unlimited Size Allowed
+              </Badge>
+            </div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="video/*"
+              onChange={handleFileBrowse}
+              className="hidden"
+            />
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="gap-2 bg-background hover:bg-accent border-border/80 text-xs shrink-0"
+              >
+                <FolderOpen className="size-4 text-primary" />
+                <span>Browse Video File...</span>
+              </Button>
+
               <Input
                 id="video-url"
-                placeholder="https://.../video.mp4 (Unlimited size or direct stream)"
+                placeholder="Or paste video stream / direct MP4 / WebM URL..."
                 value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
+                onChange={(e) => {
+                  setVideoUrl(e.target.value);
+                  setSelectedFileName(null);
+                  setSelectedFileSize(null);
+                }}
                 required
+                className="text-xs h-9 bg-background"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="video-duration">Duration</Label>
-              <Input
-                id="video-duration"
-                placeholder="14:30"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-              />
-            </div>
+            {selectedFileName && (
+              <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+                <CheckCircle2 className="size-3.5" />
+                <span className="font-medium truncate">Selected Local File: {selectedFileName}</span>
+                {selectedFileSize && <Badge variant="secondary" className="text-[10px] ml-auto">{selectedFileSize}</Badge>}
+              </div>
+            )}
+          </div>
+
+          {/* DURATION */}
+          <div className="w-48 space-y-1.5">
+            <Label htmlFor="video-duration">Duration</Label>
+            <Input
+              id="video-duration"
+              placeholder="14:30"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+            />
           </div>
 
           {/* SUB-REFERENCE CLIPS BUILDER */}

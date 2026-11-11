@@ -218,3 +218,4 @@ export function VideoPlayerModal({ video, open, onOpenChange }: VideoPlayerModal
     </Dialog>
   );
 }
+

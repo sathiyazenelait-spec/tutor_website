@@ -1,10 +1,13 @@
 package com.learnspace.tutorportal.config;
 
 import com.learnspace.tutorportal.model.LessonVideo;
+import com.learnspace.tutorportal.model.NoteSubExplanation;
 import com.learnspace.tutorportal.model.Role;
+import com.learnspace.tutorportal.model.SmartNote;
 import com.learnspace.tutorportal.model.SubReferenceClip;
 import com.learnspace.tutorportal.model.User;
 import com.learnspace.tutorportal.repository.LessonVideoRepository;
+import com.learnspace.tutorportal.repository.SmartNoteRepository;
 import com.learnspace.tutorportal.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +26,9 @@ public class DataInitializer implements CommandLineRunner {
 
     @Autowired
     private LessonVideoRepository videoRepository;
+
+    @Autowired
+    private SmartNoteRepository noteRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -122,29 +128,57 @@ public class DataInitializer implements CommandLineRunner {
                     "Integrating force with respect to displacement demonstrates change in kinetic energy."
             ));
 
-            LessonVideo chemLesson = new LessonVideo(
-                    "Gas Laws & Molecular Thermodynamics",
-                    "Chemistry",
-                    "Explaining pressure, temperature, volume, and molar distribution in ideal gas states.",
-                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                    "16:10",
+            videoRepository.save(mathLesson);
+            videoRepository.save(physicsLesson);
+
+            // Seed initial Smart Notes into H2 DB with sub-explanation terms/buttons
+            logger.info("Seeding initial Smart Notes with Sub-Explanations into H2 Database...");
+            SmartNote mathNote = new SmartNote(
+                    "Square of a Sum (a + b)² Explained",
+                    "Mathematics",
+                    "Algebraic Identities",
+                    "(a + b)² = a² + b² + 2ab",
+                    "To square a sum, we multiply the bracket by itself: (a + b)(a + b). Each term in the first bracket multiplies each term in the second, giving four pieces. Two of them are the same — that's where the 2ab comes from. Compare this with the difference of squares, where the middle terms cancel out instead of adding up.",
                     savedTutor.getId(),
                     savedTutor.getName()
             );
+            mathNote.setLikes(1240);
 
-            chemLesson.addSubReference(new SubReferenceClip(
-                    "04:30",
-                    "Ideal Gas Equation",
-                    "P · V = n · R · T",
-                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackSeeTheWorld.mp4",
-                    "Synthesis of Boyle's Law, Charles's Law, and Avogadro's Principle into a unified equation of state."
+            mathNote.addSubExplanation(new NoteSubExplanation(
+                    "a2",
+                    "a²",
+                    "Square of first term (a · a)",
+                    "Area of the top-left square with side length a. When multiplying (a+b)(a+b), this is the first term: a × a = a².",
+                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
             ));
 
-            videoRepository.save(mathLesson);
-            videoRepository.save(physicsLesson);
-            videoRepository.save(chemLesson);
+            mathNote.addSubExplanation(new NoteSubExplanation(
+                    "b2",
+                    "b²",
+                    "Square of second term (b · b)",
+                    "Area of the bottom-right corner square with side length b. Formed by multiplying b × b = b².",
+                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
+            ));
 
-            logger.info("Lesson videos and sub-reference clips successfully seeded into H2 Database!");
+            mathNote.addSubExplanation(new NoteSubExplanation(
+                    "2ab",
+                    "2ab",
+                    "Two symmetric rectangles: a·b + b·a = 2ab",
+                    "When expanding brackets: a × b = ab, and b × a = ba. Since order of multiplication does not change the result, ab + ba = 2ab. Geometrically, these are the two rectangular strips that fill the rest of the square!",
+                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4"
+            ));
+
+            mathNote.addSubExplanation(new NoteSubExplanation(
+                    "diff",
+                    "difference of squares",
+                    "Contrast: (a - b)(a + b) = a² - b²",
+                    "In the difference of squares, the cross terms are +ab and -ab. Adding them yields 0, which eliminates the middle term entirely leaving only a² - b².",
+                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4"
+            ));
+
+            noteRepository.save(mathNote);
+
+            logger.info("Initial data successfully seeded into H2 Database!");
         }
     }
 }

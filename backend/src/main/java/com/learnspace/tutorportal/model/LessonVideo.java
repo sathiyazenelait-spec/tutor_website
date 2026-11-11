@@ -89,3 +89,4 @@ public class LessonVideo {
     public List<SubReferenceClip> getSubReferences() { return subReferences; }
     public void setSubReferences(List<SubReferenceClip> subReferences) { this.subReferences = subReferences; }
 }
+

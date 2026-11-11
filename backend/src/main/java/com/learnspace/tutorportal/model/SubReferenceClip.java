@@ -60,3 +60,4 @@ public class SubReferenceClip {
     public LessonVideo getLessonVideo() { return lessonVideo; }
     public void setLessonVideo(LessonVideo lessonVideo) { this.lessonVideo = lessonVideo; }
 }
+

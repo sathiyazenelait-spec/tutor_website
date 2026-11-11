@@ -10,3 +10,4 @@ import java.util.List;
 public interface SubReferenceClipRepository extends JpaRepository<SubReferenceClip, Long> {
     List<SubReferenceClip> findByLessonVideoId(Long lessonVideoId);
 }
+

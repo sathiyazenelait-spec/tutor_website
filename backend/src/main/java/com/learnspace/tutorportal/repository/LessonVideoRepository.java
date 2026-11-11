@@ -12,3 +12,4 @@ public interface LessonVideoRepository extends JpaRepository<LessonVideo, Long> 
     List<LessonVideo> findBySubjectIgnoreCaseOrderByCreatedAtDesc(String subject);
     List<LessonVideo> findByTutorIdOrderByCreatedAtDesc(Long tutorId);
 }
+

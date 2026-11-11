@@ -40,3 +40,4 @@ public class LessonVideoRequest {
     public List<SubReferenceRequest> getSubReferences() { return subReferences; }
     public void setSubReferences(List<SubReferenceRequest> subReferences) { this.subReferences = subReferences; }
 }
+
