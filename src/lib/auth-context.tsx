@@ -78,8 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success(`Welcome back, ${authUser.name}! (${formatRole(authUser.role)})`);
       return true;
     } catch (err: any) {
-      toast.error("Unable to connect to authentication server. Ensure backend is running.");
-      console.error(err);
+      console.error("Auth server connection error:", err);
+      toast.error(
+        "Unable to connect to authentication server. If Render backend was idle, it may take 30-50s to wake up on free tier. Please wait a moment and try again!"
+      );
       return false;
     }
   };
