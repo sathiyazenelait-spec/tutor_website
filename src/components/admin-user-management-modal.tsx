@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Shield, GraduationCap, BookOpen, Trash2, UserPlus, Search, Loader2, Database, RefreshCw, ArrowLeftRight, CheckCircle2, XCircle, Plus, BookCheck, Film, Pencil, Sparkles } from "lucide-react";
 import { TutorUploadModal } from "@/components/tutor-upload-modal";
 import { TutorNoteModal } from "@/components/tutor-note-modal";
+import { API_BASE } from "@/lib/api-config";
 
 interface AdminUser {
   id: number;
@@ -94,7 +95,7 @@ export function AdminUserManagementModal({ open, onOpenChange }: AdminUserManage
     if (!open) return;
     try {
       const [subjRes, reqRes] = await Promise.all([
-        fetch("http://localhost:8081/api/subjects"),
+        fetch(`${API_BASE}/subjects`),
         fetchWithAuth("/admin/subject-requests"),
       ]);
       if (subjRes.ok) setSubjects(await subjRes.json());
@@ -106,8 +107,8 @@ export function AdminUserManagementModal({ open, onOpenChange }: AdminUserManage
     if (!open) return;
     try {
       const [vRes, nRes] = await Promise.all([
-        fetch("http://localhost:8081/api/videos"),
-        fetch("http://localhost:8081/api/notes"),
+        fetch(`${API_BASE}/videos`),
+        fetch(`${API_BASE}/notes`),
       ]);
       if (vRes.ok) setContentVideos(await vRes.json());
       if (nRes.ok) setContentNotes(await nRes.json());

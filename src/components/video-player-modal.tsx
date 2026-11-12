@@ -7,6 +7,7 @@ import { Play, Sparkles, Clock, Film, ExternalLink, X, BookOpen, User, CheckCirc
 import { useAuth, formatRole } from "@/lib/auth-context";
 import { DigitalIdCardModal, type ProfileCardData } from "@/components/digital-id-card-modal";
 import { ShareLessonModal } from "@/components/share-lesson-modal";
+import { API_BASE } from "@/lib/api-config";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -83,7 +84,7 @@ export function VideoPlayerModal({ video, open, onOpenChange, onVideoUpdated }: 
 
   const loadComments = async (videoId: number) => {
     try {
-      const res = await fetch(`http://localhost:8081/api/videos/${videoId}/comments`);
+      const res = await fetch(`${API_BASE}/videos/${videoId}/comments`);
       if (res.ok) {
         setComments(await res.json());
       }
@@ -113,7 +114,7 @@ export function VideoPlayerModal({ video, open, onOpenChange, onVideoUpdated }: 
     setHasLiked((v) => !v);
     setLikes((l) => (hasLiked ? l - 1 : l + 1));
     try {
-      const res = await fetch(`http://localhost:8081/api/videos/${video.id}/like`, { method: "POST" });
+      const res = await fetch(`${API_BASE}/videos/${video.id}/like`, { method: "POST" });
       if (res.ok) {
         const data = await res.json();
         setLikes(data.likes);
@@ -165,7 +166,7 @@ export function VideoPlayerModal({ video, open, onOpenChange, onVideoUpdated }: 
   const handleOpenTutorIdCard = async () => {
     try {
       const tutorId = video.tutorId || 2;
-      const res = await fetch(`http://localhost:8081/api/profile/${tutorId}`);
+      const res = await fetch(`${API_BASE}/profile/${tutorId}`);
       if (res.ok) {
         setTutorProfile(await res.json());
         setIdCardOpen(true);

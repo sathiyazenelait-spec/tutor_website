@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth, formatRole } from "@/lib/auth-context";
 import { Shield, GraduationCap, BookOpen, Database, ExternalLink, Loader2, CheckCircle2, User, Users, UserCog, Share2, Film } from "lucide-react";
 import { AdminUserManagementModal } from "@/components/admin-user-management-modal";
+import { BACKEND_URL } from "@/lib/api-config";
 
 interface DashboardModalProps {
   open: boolean;
@@ -270,7 +271,7 @@ export function DashboardModal({ open, onOpenChange }: DashboardModalProps) {
                     <span>H2 Database Web Console</span>
                   </div>
                   <a
-                    href="http://localhost:8081/h2-console"
+                    href={`${BACKEND_URL}/h2-console`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"

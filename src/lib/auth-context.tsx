@@ -22,7 +22,7 @@ interface AuthContextType {
   fetchWithAuth: (endpoint: string, options?: RequestInit) => Promise<Response>;
 }
 
-const API_BASE = "http://localhost:8081/api";
+import { API_BASE, BACKEND_URL } from "./api-config";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

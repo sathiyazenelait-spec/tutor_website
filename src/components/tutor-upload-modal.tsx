@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
+import { API_BASE } from "@/lib/api-config";
 import { toast } from "sonner";
 import { Plus, Trash2, Film, Sparkles, Loader2, Database, Upload, FolderOpen, CheckCircle2 } from "lucide-react";
 
@@ -40,7 +41,7 @@ export function TutorUploadModal({ open, onOpenChange, onSuccess, editVideo }: T
   const [subRefs, setSubRefs] = useState<SubRefDraft[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8081/api/subjects")
+    fetch(`${API_BASE}/subjects`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {

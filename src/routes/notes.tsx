@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import { TutorNoteModal } from "@/components/tutor-note-modal";
+import { API_BASE } from "@/lib/api-config";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -64,7 +65,7 @@ function NotesPage() {
   const fetchNotes = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8081/api/notes");
+      const res = await fetch(`${API_BASE}/notes`);
       if (!res.ok) throw new Error("Failed to fetch smart notes from H2 database");
       const data: SmartNoteData[] = await res.json();
       setNotes(data);
@@ -97,7 +98,7 @@ function NotesPage() {
     if (!selectedNote) return;
     setLiked((v) => !v);
     try {
-      const res = await fetch(`http://localhost:8081/api/notes/${selectedNote.id}/like`, { method: "POST" });
+      const res = await fetch(`${API_BASE}/notes/${selectedNote.id}/like`, { method: "POST" });
       if (res.ok) {
         const updated = await res.json();
         setSelectedNote((prev) => (prev ? { ...prev, likes: updated.likes } : null));

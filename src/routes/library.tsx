@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { VideoPlayerModal, type LessonVideoData } from "@/components/video-player-modal";
 import { TutorUploadModal } from "@/components/tutor-upload-modal";
 import { TutorSubjectRequestModal } from "@/components/tutor-subject-request-modal";
+import { API_BASE } from "@/lib/api-config";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -59,7 +60,7 @@ function LibraryPage() {
 
   const fetchSubjects = async () => {
     try {
-      const res = await fetch("http://localhost:8081/api/subjects");
+      const res = await fetch(`${API_BASE}/subjects`);
       if (res.ok) {
         const data = await res.json();
         const names = data.map((s: any) => s.name);
@@ -74,7 +75,7 @@ function LibraryPage() {
     setLoading(true);
     setError(null);
     try {
-      let url = "http://localhost:8081/api/videos";
+      let url = `${API_BASE}/videos`;
       if (subject && subject !== "All") {
         url += `?subject=${encodeURIComponent(subject)}`;
       }
@@ -250,7 +251,7 @@ function LibraryPage() {
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center gap-3 text-muted-foreground">
             <Loader2 className="size-8 animate-spin text-primary" />
-            <p className="text-sm">Connecting to H2 Database on port 8081...</p>
+            <p className="text-sm">Connecting to H2 Database on Render backend...</p>
           </div>
         ) : error ? (
           <div className="mt-8 rounded-2xl border border-destructive/30 bg-destructive/10 p-8 text-center text-destructive">
