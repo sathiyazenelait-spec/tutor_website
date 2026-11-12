@@ -76,6 +76,39 @@ public class DataInitializer implements CommandLineRunner {
             tutor.setGrade("Distinguished Senior Faculty");
             tutor.setSpecialization("Higher Algebra, Quadratic Analysis & Calculus");
 
+            User tutorPhysics = new User(
+                    "Prof. Marcus Vance",
+                    "marcus.vance@learnspace.com",
+                    passwordEncoder.encode("Tutor123!"),
+                    Role.ROLE_TUTOR
+            );
+            tutorPhysics.setIdNumber("LS-TUT-2026-003");
+            tutorPhysics.setInstitution("Department of Applied Physics");
+            tutorPhysics.setGrade("Associate Professor of Dynamics");
+            tutorPhysics.setSpecialization("Classical Mechanics, Optics & Electromagnetism");
+
+            User tutorChem = new User(
+                    "Dr. Sofia Lindqvist",
+                    "sofia.lindqvist@learnspace.com",
+                    passwordEncoder.encode("Tutor123!"),
+                    Role.ROLE_TUTOR
+            );
+            tutorChem.setIdNumber("LS-TUT-2026-004");
+            tutorChem.setInstitution("School of Chemical Sciences");
+            tutorChem.setGrade("Principal Faculty Fellow");
+            tutorChem.setSpecialization("Organic Reactions & Molecular Thermodynamics");
+
+            User tutorBio = new User(
+                    "Dr. Kwame Mensah",
+                    "kwame.mensah@learnspace.com",
+                    passwordEncoder.encode("Tutor123!"),
+                    Role.ROLE_TUTOR
+            );
+            tutorBio.setIdNumber("LS-TUT-2026-005");
+            tutorBio.setInstitution("Institute of Cellular & Environmental Biology");
+            tutorBio.setGrade("Senior Research Fellow");
+            tutorBio.setSpecialization("Cellular Biology, Genetics & Physiology");
+
             User admin = new User(
                     "System Administrator",
                     "admin@learnspace.com",
@@ -90,6 +123,9 @@ public class DataInitializer implements CommandLineRunner {
             User savedStudent = userRepository.save(student);
             User savedStudent2 = userRepository.save(student2);
             User savedTutor = userRepository.save(tutor);
+            User savedTutorPhysics = userRepository.save(tutorPhysics);
+            User savedTutorChem = userRepository.save(tutorChem);
+            User savedTutorBio = userRepository.save(tutorBio);
             userRepository.save(admin);
 
             // Seed initial friendship between Alex and Sarah
@@ -150,8 +186,8 @@ public class DataInitializer implements CommandLineRunner {
                     "Understanding force, inertial mass, and acceleration vectors in free-body diagrams.",
                     "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
                     "14:50",
-                    savedTutor.getId(),
-                    savedTutor.getName()
+                    savedTutorPhysics.getId(),
+                    savedTutorPhysics.getName()
             );
             physicsLesson.setLikes(28);
             physicsLesson.setRating(4.8);
