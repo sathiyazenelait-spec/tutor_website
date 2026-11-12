@@ -61,15 +61,78 @@ function TutorsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/public/tutors`);
-      if (!res.ok) {
-        throw new Error(`Failed to load tutors from backend (Status: ${res.status})`);
+      const [tutorsRes, videosRes] = await Promise.allSettled([
+        fetch(`${API_BASE}/public/tutors`),
+        fetch(`${API_BASE}/videos`),
+      ]);
+
+      let backendTutors: TutorProfile[] = [];
+      if (tutorsRes.status === "fulfilled" && tutorsRes.value.ok) {
+        backendTutors = await tutorsRes.value.json();
       }
-      const data: TutorProfile[] = await res.json();
-      setTutors(data);
+
+      // Automatically cross-reference with all videos in the Video Library to guarantee
+      // that any tutor who published a video lesson ALWAYS appears on the Tutors page
+      if (videosRes.status === "fulfilled" && videosRes.value.ok) {
+        const videos = await videosRes.value.json();
+        if (Array.isArray(videos)) {
+          videos.forEach((v: any) => {
+            if (v.tutorName && v.tutorName.trim()) {
+              const cleanName = v.tutorName.trim();
+              const existing = backendTutors.find(
+                (t) =>
+                  (v.tutorId != null && t.id != null && String(t.id) === String(v.tutorId)) ||
+                  t.name.trim().toLowerCase() === cleanName.toLowerCase()
+              );
+              if (existing) {
+                existing.videoCount = Math.max(existing.videoCount || 0, 1);
+                if (v.subject && (!existing.subject || existing.subject === "Mathematics")) {
+                  existing.subject = v.subject;
+                }
+              } else {
+                const initials =
+                  cleanName
+                    .replace(/Dr\.|Prof\.|Mr\.|Ms\./g, "")
+                    .trim()
+                    .split(/\s+/)
+                    .map((p: string) => p[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2) || "TU";
+
+                backendTutors.push({
+                  id: v.tutorId ? String(v.tutorId) : `pub-${cleanName}`,
+                  name: cleanName,
+                  email: `${cleanName.toLowerCase().replace(/[^a-z0-9]/g, ".")}@learnspace.com`,
+                  role: "ROLE_TUTOR",
+                  idNumber: `LS-TUT-2026-${v.tutorId ? String(v.tutorId).padStart(3, "0") : "099"}`,
+                  institution: "LearnSpace Publishing Faculty",
+                  grade: "Video Lesson Instructor",
+                  specialization: `${v.subject || "Interactive"} Video Lessons & Formulations`,
+                  subject: v.subject || "Physics",
+                  lessons: 1,
+                  videoCount: 1,
+                  noteCount: 0,
+                  students: 1680,
+                  rating: v.rating || 4.9,
+                  headline: `Video Lesson Instructor · Department of ${v.subject || "Science"}`,
+                  initials: initials,
+                  verified: true,
+                });
+              }
+            }
+          });
+        }
+      }
+
+      if (backendTutors.length === 0 && tutorsRes.status === "rejected") {
+        throw new Error("Unable to connect to backend server. If Render is sleeping, it will wake up in ~30s.");
+      }
+
+      setTutors(backendTutors);
     } catch (err: any) {
       console.error("Error fetching tutors:", err);
-      setError(err.message || "Unable to connect to backend server. If Render is sleeping, it will wake up in ~30s.");
+      setError(err.message || "Unable to connect to backend server. Please wait a moment and try again.");
     } finally {
       setLoading(false);
     }

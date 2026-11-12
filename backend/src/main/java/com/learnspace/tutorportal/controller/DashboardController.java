@@ -55,14 +55,72 @@ public class DashboardController {
             uniqueMap.putIfAbsent(key, t);
         }
 
+        // Ensure every author who published videos in the Video Library is included on the Tutors page
+        if (videoRepository != null) {
+            for (com.learnspace.tutorportal.model.LessonVideo v : videoRepository.findAll()) {
+                if (v.getTutorName() != null && !v.getTutorName().isBlank()) {
+                    String cleanName = v.getTutorName().trim();
+                    boolean exists = uniqueMap.values().stream().anyMatch(u ->
+                        (v.getTutorId() != null && u.getId() != null && v.getTutorId().equals(u.getId())) ||
+                        (u.getName() != null && u.getName().trim().equalsIgnoreCase(cleanName))
+                    );
+                    if (!exists) {
+                        User pubTutor = new User(
+                                cleanName,
+                                cleanName.toLowerCase().replaceAll("[^a-z0-9]", ".") + "@learnspace.com",
+                                "",
+                                Role.ROLE_TUTOR
+                        );
+                        if (v.getTutorId() != null) {
+                            pubTutor.setId(v.getTutorId());
+                        }
+                        pubTutor.setIdNumber("LS-TUT-2026-" + (v.getTutorId() != null ? String.format("%03d", v.getTutorId()) : "099"));
+                        pubTutor.setInstitution("LearnSpace Video Faculty");
+                        pubTutor.setGrade("Publishing Faculty");
+                        pubTutor.setSpecialization((v.getSubject() != null ? v.getSubject() : "Science") + " & Interactive Video Lessons");
+                        uniqueMap.put("video-" + cleanName.toLowerCase(), pubTutor);
+                    }
+                }
+            }
+        }
+
+        // Also ensure any smart note authors are included
+        if (noteRepository != null) {
+            for (com.learnspace.tutorportal.model.SmartNote n : noteRepository.findAll()) {
+                if (n.getTutorName() != null && !n.getTutorName().isBlank()) {
+                    String cleanName = n.getTutorName().trim();
+                    boolean exists = uniqueMap.values().stream().anyMatch(u ->
+                        (n.getTutorId() != null && u.getId() != null && n.getTutorId().equals(u.getId())) ||
+                        (u.getName() != null && u.getName().trim().equalsIgnoreCase(cleanName))
+                    );
+                    if (!exists) {
+                        User noteTutor = new User(
+                                cleanName,
+                                cleanName.toLowerCase().replaceAll("[^a-z0-9]", ".") + "@learnspace.com",
+                                "",
+                                Role.ROLE_TUTOR
+                        );
+                        if (n.getTutorId() != null) {
+                            noteTutor.setId(n.getTutorId());
+                        }
+                        noteTutor.setIdNumber("LS-TUT-2026-" + (n.getTutorId() != null ? String.format("%03d", n.getTutorId()) : "098"));
+                        noteTutor.setInstitution("LearnSpace Faculty");
+                        noteTutor.setGrade("Interactive Note Author");
+                        noteTutor.setSpecialization((n.getSubject() != null ? n.getSubject() : "Mathematics") + " & Equation Derivations");
+                        uniqueMap.put("note-" + cleanName.toLowerCase(), noteTutor);
+                    }
+                }
+            }
+        }
+
         List<Map<String, Object>> result = uniqueMap.values().stream().map(t -> {
             Map<String, Object> map = new HashMap<>();
-            map.put("id", String.valueOf(t.getId()));
+            map.put("id", String.valueOf(t.getId() != null ? t.getId() : Math.abs(t.getName().hashCode())));
             map.put("userId", t.getId());
             map.put("name", t.getName());
             map.put("email", t.getEmail());
             map.put("role", t.getRole().name());
-            map.put("idNumber", t.getIdNumber() != null ? t.getIdNumber() : "LS-TUT-2026-" + String.format("%03d", t.getId()));
+            map.put("idNumber", t.getIdNumber() != null ? t.getIdNumber() : "LS-TUT-2026-" + (t.getId() != null ? String.format("%03d", t.getId()) : "001"));
             map.put("institution", t.getInstitution() != null ? t.getInstitution() : "Faculty of Science & Mathematics");
             map.put("grade", t.getGrade() != null ? t.getGrade() : "Distinguished Faculty");
 
@@ -70,29 +128,35 @@ public class DashboardController {
                     ? t.getSpecialization()
                     : "Mathematics & Sciences";
             map.put("specialization", spec);
-            map.put("subject", deriveSubject(spec));
 
             long videoCount = 0;
+            String videoSubject = null;
             if (videoRepository != null) {
-                videoCount = videoRepository.findAll().stream()
-                        .filter(v -> (v.getTutorId() != null && v.getTutorId().equals(t.getId())) ||
-                                     (v.getTutorName() != null && v.getTutorName().equalsIgnoreCase(t.getName())))
-                        .count();
+                List<com.learnspace.tutorportal.model.LessonVideo> tutorVids = videoRepository.findAll().stream()
+                        .filter(v -> (v.getTutorId() != null && t.getId() != null && v.getTutorId().equals(t.getId())) ||
+                                     (v.getTutorName() != null && t.getName() != null && v.getTutorName().trim().equalsIgnoreCase(t.getName().trim())))
+                        .collect(Collectors.toList());
+                videoCount = tutorVids.size();
+                if (!tutorVids.isEmpty() && tutorVids.get(0).getSubject() != null) {
+                    videoSubject = tutorVids.get(0).getSubject();
+                }
             }
 
             long noteCount = 0;
             if (noteRepository != null) {
                 noteCount = noteRepository.findAll().stream()
-                        .filter(n -> (n.getTutorId() != null && n.getTutorId().equals(t.getId())) ||
-                                     (n.getTutorName() != null && n.getTutorName().equalsIgnoreCase(t.getName())))
+                        .filter(n -> (n.getTutorId() != null && t.getId() != null && n.getTutorId().equals(t.getId())) ||
+                                     (n.getTutorName() != null && t.getName() != null && n.getTutorName().trim().equalsIgnoreCase(t.getName().trim())))
                         .count();
             }
 
+            map.put("subject", videoSubject != null ? videoSubject : deriveSubject(spec));
+
             long lessonsTotal = videoCount + noteCount;
-            map.put("lessons", lessonsTotal > 0 ? lessonsTotal : 4);
+            map.put("lessons", lessonsTotal > 0 ? lessonsTotal : 2);
             map.put("videoCount", videoCount);
             map.put("noteCount", noteCount);
-            map.put("students", 1450 + (t.getId() * 320));
+            map.put("students", 1450 + (t.getId() != null ? t.getId() * 320 : 500));
             map.put("rating", 4.9);
             map.put("headline", t.getGrade() + " · " + t.getInstitution());
             map.put("initials", getInitials(t.getName()));
