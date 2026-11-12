@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: tutor-portal-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/public/status
+    envVars:
+      - key: PORT
+        value: 10000
