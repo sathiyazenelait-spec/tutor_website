@@ -80,6 +80,7 @@ public class WebSecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/healthz", "/favicon.ico", "/error").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/videos/**").permitAll()
                 .requestMatchers("/api/notes/**").permitAll()
@@ -87,7 +88,6 @@ public class WebSecurityConfig {
                 .requestMatchers("/api/profile/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/error").permitAll()
                 .requestMatchers("/api/student/**").hasAnyRole("STUDENT", "ADMIN")
                 .requestMatchers("/api/tutor/**").hasAnyRole("TUTOR", "ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
